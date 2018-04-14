@@ -116,22 +116,12 @@ xlabel('Age'), ylabel('Collagen mg/mm^{3}'), title('Age-Normalised Data');
 % the same is calculated starting from the lowest values
 %
 
+% OLD CLASSIFICATION
 for im=1:2,
 
     if im==1, [CollNormSort,iSort]=sort(T.CollNorm,'descend'); end
     if im==2, [CollNormSort,iSort]=sort(T.DensNorm,'descend'); end
     
-
-for ip=1:NumAll,
-    CountMal=sum(T.Lesion(iSort(NumAll-ip+1:NumAll))==MAL);
-    CountNor=sum(T.Lesion(iSort(NumAll-ip+1:NumAll))==NOR);
-    CountLes=CountMal+CountNor;
-    if CountLes>0,
-        RateMalLow(CountLes)=100*(CountMal/CountLes)/(NumMal/NumLes);
-        Treshold(CountLes)=100*CountLes/NumLes;
-    end
-end
-
 for ip=1:NumAll,
     CountMal=sum(T.Lesion(iSort(1:ip))==MAL);
     CountNor=sum(T.Lesion(iSort(1:ip))==NOR);
@@ -142,7 +132,8 @@ for ip=1:NumAll,
     ATreshold(ip,im)=100*CountLes/NumLes;
     if CountLes>0,
         RateMalHigh(CountLes)=100*(CountMal/CountLes)/(NumMal/NumLes);
-        Treshold(CountLes)=100*CountLes/NumLes;
+        Treshold(CountLes)=100*CountNor/NumNor;
+        %Treshold(CountLes)=100*CountLes/NumLes;
         FractNor(CountLes)=100*CountNor/CountLes;
         FractMal(CountLes)=100*CountMal/CountLes;
     end
@@ -172,7 +163,7 @@ end
 %     if im==2, title('Increased malignant lesion occurence for DENSITY'); end
 % end
 
-
+% FIGURE RISK
 if im==1, figure, plot(Treshold,FractMal,'-r',Treshold,FractNor,'-b','LineWidth',2), grid on, hold on; 
 else plot(Treshold,FractMal,':r',Treshold,FractNor,':b','LineWidth',2), grid on, hold on; end
 set(gca,'FontSize',12);
@@ -181,6 +172,7 @@ xlabel('Threshold (%)'), ylabel('Incidence of Lesion Type (%)');
 ylim([0 100]);
 %if im==1, title('Increased malignant lesion occurence for COLLAGEN'); end
 %if im==2, title('Increased malignant lesion occurence for DENSITY'); end
+
 
 if SAVE_FIG,
     if im==2, save_figure('FigComparison'); end
@@ -197,3 +189,108 @@ for im=1:2,
     ValueNor(im)=ACountNor(iTreshold(im),im)
 end
     
+
+% % OLD CLASSIFICATION
+% for im=1:2,
+% 
+%     if im==1, [CollNormSort,iSort]=sort(T.CollNorm,'descend'); end
+%     if im==2, [CollNormSort,iSort]=sort(T.DensNorm,'descend'); end
+%     
+% for ip=1:NumAll,
+%     CountMal=sum(T.Lesion(iSort(1:ip))==MAL);
+%     CountNor=sum(T.Lesion(iSort(1:ip))==NOR);
+%     CountLes=CountMal+CountNor;
+%     ACountMal(ip,im)=CountMal;
+%     ACountNor(ip,im)=CountNor;
+%     ACountLes(ip,im)=CountLes;
+%     ATreshold(ip,im)=100*CountLes/NumLes;
+%     if CountLes>0,
+%         RateMalHigh(CountLes)=100*(CountMal/CountLes)/(NumMal/NumLes);
+%         Treshold(CountLes)=100*CountNor/NumNor;
+%         %Treshold(CountLes)=100*CountLes/NumLes;
+%         FractNor(CountLes)=100*CountNor/CountLes;
+%         FractMal(CountLes)=100*CountMal/CountLes;
+%     end
+% end
+% 
+% % FIGURE RISK
+% if im==1, figure, plot(Treshold,FractMal,'-r',Treshold,FractNor,'-b','LineWidth',2), grid on, hold on; 
+% else plot(Treshold,FractMal,':r',Treshold,FractNor,':b','LineWidth',2), grid on, hold on; end
+% set(gca,'FontSize',12);
+% if im==2, legend('Cancer (Collagen)','Normal (Collagen)','Cancer (Density)','Normal (Density)'), grid on; end
+% xlabel('Threshold (%)'), ylabel('Incidence of Lesion Type (%)');
+% ylim([0 100]);
+% 
+% 
+% if SAVE_FIG,
+%     if im==2, save_figure('FigComparison'); end
+% else
+%     if im==1, title('Increased malignant lesion occurence for COLLAGEN'); end
+%     if im==2, title('Increased malignant lesion occurence for DENSITY'); end
+% end
+% 
+% end
+% 
+% for im=1:2,
+%     iTreshold(im)=max(find(ATreshold(:,im)<TRESHOLD))
+%     ValueMal(im)=ACountMal(iTreshold(im),im)
+%     ValueNor(im)=ACountNor(iTreshold(im),im)
+% end
+    
+%% NEW CLASSIFICATION
+
+% get sorted index (Array are not touched)
+for im=1:2,
+
+    if im==1, [CollNormSort,iSort]=sort(T.CollNorm,'descend'); end
+    if im==2, [CollNormSort,iSort]=sort(T.DensNorm,'descend'); end
+    
+for ip=1:NumAll,
+    ACountMal(ip,im)=sum(T.Lesion(iSort(1:ip))==MAL);
+    ACountNor(ip,im)=sum(T.Lesion(iSort(1:ip))==NOR);
+end
+end
+ACountLes=ACountMal+ACountNor;
+ATreshold=100*ACountNor/NumLes;
+ARateMalHigh=100*(ACountMal./ACountNor)./(NumMal./NumNor);
+AFractNor=100*ACountNor./ACountLes;
+AFractMal=100*ACountMal./ACountLes;
+
+% FIGURE RISK
+figure,
+h=plot(ATreshold,AFractMal,'r','LineWidth',2); hold on;
+set(h,{'LineStyle'},{'-';':'})
+h=plot(ATreshold,AFractNor,'b','LineWidth',2);
+set(h,{'LineStyle'},{'-';':'})
+set(gca,'FontSize',12);
+legend('Cancer (Collagen)','Normal (Collagen)','Cancer (Density)','Normal (Density)'), grid on;
+xlabel('Threshold (%)'), ylabel('Incidence of Lesion Type (%)');
+ylim([0 100]);
+title('Risk Factor divided for Total Lesion');
+
+if SAVE_FIG,
+    save_figure('FigComparison');
+end
+
+% FIGURE RISK RATIO
+figure,
+h=plot(ATreshold,ARateMalHigh,'r','LineWidth',2); hold on;
+set(h,{'LineStyle'},{'-';':'})
+set(gca,'FontSize',12);
+legend('Collagen','Density'), grid on;
+xlabel('Threshold (%)'), ylabel('Risk Ratio (high/all) (%)');
+ylim([0 600]);
+title('Increased of Risk Factor (high/all)');
+
+if SAVE_FIG,
+    save_figure('FigComparison');
+end
+
+
+
+for im=1:2,
+    iTreshold(im)=max(find(ATreshold(:,im)<TRESHOLD))
+    ValueMal(im)=ACountMal(iTreshold(im),im)
+    ValueNor(im)=ACountNor(iTreshold(im),im)
+end
+
