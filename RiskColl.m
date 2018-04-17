@@ -12,6 +12,7 @@ close all;
 clear all;
 SAVE_FIG=0;
 
+KAPPA = 8; %NORMAL/TUMOR in whole population 
 TRESHOLD=15;
 MAL=1;
 NOR=2;
@@ -21,7 +22,7 @@ DENS=2;
 NumMeas=2; % COLL + DENS
 PERCSCALE=1:1:100; % scale of the percentile
 NumPerc=length(PERCSCALE);
-BIRADS=[10 50 90 100]; % percentiles for def of Birads class
+BIRADS=[15 50 85 100]; % percentiles for def of Birads class
 NumBir=length(BIRADS);
 T=readtable('Data.txt','Delimiter','\t');
 NumAll=height(T);
@@ -112,7 +113,12 @@ PCountNor(NumPerc,DENS)=length(T.DensNorm(T.Lesion==NOR));
 
 % calc global terms
 PCountLes=PCountMal+PCountNor;
-PRateMalHigh=100*((NumMal-PCountMal)./(NumNor-PCountNor))./(NumMal./NumNor); % use Num-Count because you want to invert the percentile range
+HT=(NumMal-PCountMal);
+HN=(NumNor-PCountNor);
+AT=NumMal;
+AN=NumNor;
+%PRateMalHigh=100*((NumMal-PCountMal)./(NumNor-PCountNor))./(NumMal./NumNor); % use Num-Count because you want to invert the percentile range
+PRateMalHigh=100*(HT./(HT+KAPPA*HN))./(AT./(AT+KAPPA*AN)); % use Num-Count because you want to invert the percentile range
 PFractNor=100*PCountNor./PCountLes;
 PFractMal=100*PCountMal./PCountLes;
 PRateMalHighLow=100*((NumMal-PCountMal)./(NumNor-PCountNor))./(PCountMal./PCountNor); % use Num-Count because you want to invert the percentile range
@@ -138,10 +144,16 @@ for ib=2:NumBir
     end
 end
 
-BRiskRatio(1,:)=(BCountMal(4,:)./BCountNor(4,:))./(NumMal./NumNor); % Here we store Class 4 / All
+%BRiskRatio(1,:)=(BCountMal(4,:)./BCountNor(4,:))./(NumMal./NumNor); % Here we store Class 4 / All
 for ib=2:NumBir
-    BRiskRatio(ib,:)=(BCountMal(ib,:)./BCountNor(ib,:))./(BCountMal(1,:)./BCountNor(1,:)); % Here we store Class ib / Class 1
+    Tb=BCountMal(ib,:);
+    Nb=BCountNor(ib,:);
+    T1=BCountMal(1,:);
+    N1=BCountNor(1,:);
+    BRiskRatio(ib,:)=(Tb./(Tb+KAPPA*Nb))./(T1./(T1+KAPPA*N1));
+    %BRiskRatio(ib,:)=(BCountMal(ib,:)./(BCountNor(ib,:)))./(BCountMal(1,:)./BCountNor(1,:)); % Here we store Class ib / Class 1
 end
+BRiskRatio(1,:)=(Tb./(Tb+KAPPA*Nb))./(AT./(AT+KAPPA*AN));
 
 display('Collagen  Density');
 display(BRiskRatio);
