@@ -22,8 +22,6 @@ DENS=2;
 NumMeas=2; % COLL + DENS
 PERCSCALE=1:1:100; % scale of the percentile
 NumPerc=length(PERCSCALE);
-BIRADS=[15 50 85 100]; % percentiles for def of Birads class
-NumBir=length(BIRADS);
 T=readtable('Data.txt','Delimiter','\t');
 NumAll=height(T);
 iVal=T.SO2<97;
@@ -124,8 +122,12 @@ PFractMal=100*PCountMal./PCountLes;
 PRateMalHighLow=100*((NumMal-PCountMal)./(NumNor-PCountNor))./(PCountMal./PCountNor); % use Num-Count because you want to invert the percentile range
 
 % calc Birads
-BThreshold(:,COLL)=prctile(T.CollNorm(T.Lesion==NOR),BIRADS);
-BThreshold(:,DENS)=prctile(T.DensNorm(T.Lesion==NOR),BIRADS);
+for il=5:5:45
+    
+Birads=[il 50 100-il 100]; % percentiles for def of Birads class
+NumBir=length(Birads);
+BThreshold(:,COLL)=prctile(T.CollNorm(T.Lesion==NOR),Birads);
+BThreshold(:,DENS)=prctile(T.DensNorm(T.Lesion==NOR),Birads);
 for ib=1:NumBir-1
     BCountMal(ib,COLL)=sum(T.CollNorm(T.Lesion==MAL)<=BThreshold(ib,COLL));
     BCountMal(ib,DENS)=sum(T.DensNorm(T.Lesion==MAL)<=BThreshold(ib,DENS));
@@ -155,8 +157,35 @@ for ib=2:NumBir
 end
 BRiskRatio(1,:)=(Tb./(Tb+KAPPA*Nb))./(AT./(AT+KAPPA*AN));
 
-display('Collagen  Density');
-display(BRiskRatio);
+% disp table
+display(Birads);
+RowNames = {'class4\All';'class2\class1';'class3\class1';'class4\class1'};
+ColumnNames = {'Collagen','Density'};
+BTable=array2table(BRiskRatio,'RowNames',RowNames,'VariableNames',ColumnNames);
+display(BTable);
+
+figure,
+set(gca,'FontSize',12);
+plot(T.DensNorm(iMal),T.CollNorm(iMal),'dr'), hold on;
+plot(T.DensNorm(iNor),T.CollNorm(iNor),'db');
+bDens=BThreshold(1:NumBir-1,DENS);
+bColl=BThreshold(1:NumBir-1,COLL);
+maxDens=max(max(T.DensNorm(iMal)),max(T.DensNorm(iNor)));
+maxColl=max(max(T.CollNorm(iMal)),max(T.CollNorm(iNor)));
+X=[bDens,bDens];
+Y=repmat([0 maxColl],NumBir-1,1);
+line(X',Y','Color','k','LineWidth',2);
+X=repmat([0 maxDens],NumBir-1,1);
+Y=[bColl,bColl];
+line(X',Y','Color','k','LineWidth',2);
+%grid on;
+xlabel('Normalised Density'), ylabel('Normalised Collagen');
+legend('Cancer','Normal');
+if SAVE_FIG, save_figure('ScatterPlot');
+else title('Age-Normalised Data'); end
+
+
+end % end loop on value of Birads
 
 % FIGURE RISK
 figure,
@@ -205,25 +234,6 @@ end
 % in the first figure, the black lines corresponds to a cluster of 15% of
 % subjects
 
-figure,
-set(gca,'FontSize',12);
-plot(T.DensNorm(iMal),T.CollNorm(iMal),'dr'), hold on;
-plot(T.DensNorm(iNor),T.CollNorm(iNor),'db');
-bDens=BThreshold(1:NumBir-1,DENS);
-bColl=BThreshold(1:NumBir-1,COLL);
-maxDens=max(max(T.DensNorm(iMal)),max(T.DensNorm(iNor)));
-maxColl=max(max(T.CollNorm(iMal)),max(T.CollNorm(iNor)));
-X=[bDens,bDens];
-Y=repmat([0 maxColl],NumBir-1,1);
-line(X',Y','Color','k','LineWidth',2);
-X=repmat([0 maxDens],NumBir-1,1);
-Y=[bColl,bColl];
-line(X',Y','Color','k','LineWidth',2);
-%grid on;
-xlabel('Normalised Density'), ylabel('Normalised Collagen');
-legend('Cancer','Normal');
-if SAVE_FIG, save_figure('ScatterPlot');
-else title('Age-Normalised Data'); end
 
 figure,
 plot(T.Age(iMal),T.Collagen(iMal),'dr'), hold on;
