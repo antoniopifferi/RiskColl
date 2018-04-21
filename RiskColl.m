@@ -33,6 +33,9 @@ iMal=strcmp(T.Type,'Malignant');
 %iNor=iNor+iBen;
 iNor=(iNor+iDens+iVal+iNotes)==4;
 iMal=(iMal+iDens+iVal+iNotes)==4;
+% iNor=(iNor+iDens)==2;
+% iMal=(iMal+iDens)==2;
+
 T.Lesion=zeros(NumAll,1);
 T.Lesion(iMal)=MAL;
 T.Lesion(iNor)=NOR;
@@ -61,8 +64,8 @@ T.CollNorm=T.Collagen./T.CollAge;
 T.DensNorm=T.Density./T.DensAge;
 % T.CollNorm=(T.Collagen-T.CollAge)./T.CollAge;
 % T.DensNorm=(T.Density-T.DensAge)./T.DensAge;
-% T.CollNorm=T.Collagen;
-% T.DensNorm=T.Density;
+%T.CollNorm=T.Collagen;
+%T.DensNorm=T.Density;
 
 
 
@@ -122,7 +125,7 @@ PFractMal=100*PCountMal./PCountLes;
 PRateMalHighLow=100*((NumMal-PCountMal)./(NumNor-PCountNor))./(PCountMal./PCountNor); % use Num-Count because you want to invert the percentile range
 
 % calc Birads
-for il=5:5:45
+for il=5:5:20
     
 Birads=[il 50 100-il 100]; % percentiles for def of Birads class
 NumBir=length(Birads);
@@ -164,6 +167,7 @@ ColumnNames = {'Collagen','Density'};
 BTable=array2table(BRiskRatio,'RowNames',RowNames,'VariableNames',ColumnNames);
 display(BTable);
 
+% FIGURE COLL+DENS
 figure,
 set(gca,'FontSize',12);
 plot(T.DensNorm(iMal),T.CollNorm(iMal),'dr'), hold on;
@@ -182,7 +186,49 @@ line(X',Y','Color','k','LineWidth',2);
 xlabel('Normalised Density'), ylabel('Normalised Collagen');
 legend('Cancer','Normal');
 if SAVE_FIG, save_figure('ScatterPlot');
-else title('Age-Normalised Data'); end
+else, title(['Age-Normalised Data for Low-High Quant = ' num2str(il) '%']); end
+
+% FIGURE COLL
+figure,
+set(gca,'FontSize',12);
+plot(T.Age(iMal),T.CollNorm(iMal),'dr'), hold on;
+plot(T.Age(iNor),T.CollNorm(iNor),'db');
+%bDens=BThreshold(1:NumBir-1,DENS);
+bColl=BThreshold(1:NumBir-1,COLL);
+maxAge=max(max(T.Age(iMal)),max(T.Age(iNor)));
+%maxColl=max(max(T.CollNorm(iMal)),max(T.CollNorm(iNor)));
+% X=[bDens,bDens];
+% Y=repmat([0 maxColl],NumBir-1,1);
+% line(X',Y','Color','k','LineWidth',2);
+X=repmat([0 maxAge],NumBir-1,1);
+Y=[bColl,bColl];
+line(X',Y','Color','k','LineWidth',2);
+%grid on;
+xlabel('Age'), ylabel('Normalised Collagen');
+legend('Cancer','Normal');
+if SAVE_FIG, save_figure('ScatterPlot');
+else, title(['Age-Normalised Data for Low-High Quant = ' num2str(il) '%']); end
+
+% FIGURE DENS
+figure,
+set(gca,'FontSize',12);
+plot(T.Age(iMal),T.DensNorm(iMal),'dr'), hold on;
+plot(T.Age(iNor),T.DensNorm(iNor),'db');
+bDens=BThreshold(1:NumBir-1,DENS);
+%bColl=BThreshold(1:NumBir-1,COLL);
+maxAge=max(max(T.Age(iMal)),max(T.Age(iNor)));
+%maxColl=max(max(T.CollNorm(iMal)),max(T.CollNorm(iNor)));
+% X=[bDens,bDens];
+% Y=repmat([0 maxAge],NumBir-1,1);
+% line(X',Y','Color','k','LineWidth',2);
+X=repmat([0 maxAge],NumBir-1,1);
+Y=[bDens,bDens];
+line(X',Y','Color','k','LineWidth',2);
+%grid on;
+xlabel('Age'), ylabel('Normalised Density');
+legend('Cancer','Normal');
+if SAVE_FIG, save_figure('ScatterPlot');
+else, title(['Age-Normalised Data for Low-High Quant = ' num2str(il) '%']); end
 
 
 end % end loop on value of Birads
